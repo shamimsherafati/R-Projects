@@ -1,0 +1,330 @@
+---
+title: 'ALY6010: R Practice 2'
+subtitle: 'Module 2'
+author: "Shamim Sherafati" 
+date: "2022-11-09"
+output:
+  html_document: 
+    toc: yes
+    keep_md: yes
+  pdf_document: default
+---
+
+### Importing packages
+```{r}
+#install.packages("plyr")
+#install.packages("dplyr")
+#install.packages("tidyr")
+#install.packages("tidyverse")
+#install.packages("psych")
+#install.packages("ggpubr")
+#install.packages("ggplot2")
+#install.packages("plotly")
+#install.packages("moments")
+#install.packages('gmodels')
+#install.packages("stringr")
+
+library(plyr) 
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(psych)
+library(ggpubr)
+library(ggplot2)
+library(plotly)
+library(moments)
+library(gmodels)
+library(stringr)
+```
+### Import the file *Student Survey.csv*
+
+```{r}
+StudentMH = read.csv("~/Documents/ALY 6010/dataset/Student Mental health.csv")
+StudentMH
+```
+### Dimension of the dataset
+```{r}
+dim(StudentMH) #get dim to gain information before start cleaning data
+```
+
+### Data Cleaning
+
+```{r}
+# Sorted dataframe with descending age
+StudentMH_sort <- StudentMH[order(-StudentMH$Age),]
+head(StudentMH_sort)
+
+
+# Rename column 
+names(StudentMH_sort)[names(StudentMH_sort) == 'Choose.your.gender'] <- 'Gender'
+names(StudentMH_sort)[names(StudentMH_sort) == 'What.is.your.course.'] <- 'Course'
+names(StudentMH_sort)[names(StudentMH_sort) == 'Your.current.year.of.Study'] <- 'Current.study.year'
+names(StudentMH_sort)[names(StudentMH_sort) == 'What.is.your.CGPA.'] <- 'CGPA'
+names(StudentMH_sort)[names(StudentMH_sort) == 'Do.you.have.Depression.'] <- 'Depression'
+names(StudentMH_sort)[names(StudentMH_sort) == 'Do.you.have.Anxiety.'] <- 'Anxiety'
+names(StudentMH_sort)[names(StudentMH_sort) == 'Do.you.have.Panic.attack.'] <- 'Panic.attack'
+names(StudentMH_sort)[names(StudentMH_sort) == 'Did.you.seek.any.specialist.for.a.treatment.'] <- 'Specialist.Treatment'
+head(StudentMH_sort)
+
+# Drop column "Timestamp"
+StudentMH_drop <- select(StudentMH_sort, -1)
+head(StudentMH_drop)
+
+```
+
+
+```{r}
+str(StudentMH_drop)
+```
+
+```{r}
+summary(StudentMH_drop) #get summary of dataset after cleaning data
+```
+
+### Mean, Min, Max, STD 
+
+```{r}
+#get the Mean, Min, Max, STD of each current year of study/course
+StudentMH_drop %>%
+group_by(Current.study.year)%>%
+summarise_at(vars(Course),list(Mean=mean, Min=min, Max=max,STD=sd))
+
+#get the Mean, Min, Max, STD of each course/ CGPA
+StudentMH_drop %>%
+group_by(Course)%>%
+summarise_at(vars(CGPA),list(Mean=mean, Min=min, Max=max,STD=sd))
+
+```
+
+### Subsets of data
+
+```{r}
+#subset of data for finding the Anxiety, Depression and need of Specialist.Treatment
+subset(StudentMH_drop, Anxiety == "Yes") #Find subset of having Anxiety 
+subset(StudentMH_drop, Specialist.Treatment == "Yes") #subset for need of Specialist.Treatment
+subset(StudentMH_drop, Depression == "Yes") #subset of having Depression 
+
+#subset of data for finding the courses and GPA for first year of study
+subset(StudentMH_drop, Current.study.year == "year 1") 
+
+```
+### Describe Data
+
+```{r}
+psych::describe(StudentMH_drop, na.rm = TRUE, interp=FALSE,skew = TRUE, ranges = TRUE,trim=.1,
+type=3,check=TRUE,fast=NULL,quant=NULL,IQR=FALSE) #describe dataset 
+
+describeData(StudentMH_drop,head=1,tail=2) #describe dataset for first head and two of tails
+```
+### Table For Course and Current.study.year
+
+```{r}
+#table for different courses which must taken each years
+table(StudentMH_drop$Course, StudentMH_drop$Current.study.year)
+```
+### Frequency Tables For age and  Marital status
+
+```{r}
+#Frequency Table for marital status and age
+StudentMH_Ftable <- table(StudentMH_drop$Age, StudentMH_drop$Marital.status) 
+ftable(StudentMH_Ftable)
+```
+### Cross Table for Specialist.Treatment, Depression, Panic.attack
+
+```{r}
+#create CrossTable for 'Depression' and 'Panic.attack'
+CrossTable(StudentMH_drop$Depression, StudentMH_drop$Panic.attack,
+                 dnn = c("Depression", "Panic.attack"))
+```
+```{r}
+#create CrossTable for 'Depression' and 'Specialist.Treatment'
+CrossTable(StudentMH_drop$Depression, StudentMH_drop$Specialist.Treatment,
+                 dnn = c("Depression", "Specialist.Treatment"))
+```
+```{r}
+#create CrossTable for 'Specialist.Treatment' and 'Panic.attack'
+CrossTable(StudentMH_drop$Specialist.Treatment, StudentMH_drop$Panic.attack,
+                 dnn = c("Specialist.Treatment", "Panic.attack"))
+```
+### Three-line table
+
+```{r}
+#install.packages("bruceR")
+library(bruceR)
+
+print_table(
+  StudentMH_drop,
+  nspaces = 1,
+  row.names = TRUE,
+  col.names = TRUE,
+  title = "",
+  note = "",
+  append = "",
+  line = TRUE,
+  file = NULL,
+  file.align.head = "auto",
+  file.align.text = "auto")   #create three line table for dataset
+```
+
+### R abline() and par() function
+
+```{r}
+
+StudentMH_zone <- StudentMH_drop$Age #create new variable
+par(mfrow=c(2,2))  #use par function to create histogram and boxplot
+
+hist(StudentMH_zone) #histogram for new variable
+boxplot(StudentMH_zone, horizontal=TRUE) #boxplot for new variable with par() function
+
+set.seed(1234); StudentMH_drop<-rnorm(200)
+hist(StudentMH_drop, col="lightblue")
+abline(v = mean(StudentMH_drop), col="red", lwd=3, lty=2) #use abline function for histogram
+```
+### Different courses GPA Score
+
+```{r}
+#ggplot for education and marital status
+
+ggplot (data = df$StudentMH_drop) + geom_bar(mapping = aes(x=CGPA, fill=Course), position="dodge") + labs(title="Course GPA", x ="Course", y = "GPA")
+```
+### Average of ages who go for Specialist.Treatment
+
+```{r}
+#Average of ages who go for Specialist.Treatment
+TopAge <- StudentMH_drop
+
+TreatmentAge <- aggregate(Age ~ Specialist.Treatment, TopAge, mean)
+slice( TreatmentAge[order(-TreatmentAge$Age),], 1:5)
+```
+```{r}
+#create box plot for Average of ages who go for Specialist.Treatment based on the previous code
+
+boxplot( TopAge$Age ~ TopAge$Specialist.Treatment, main="Average of ages who go for Specialist.Treatment", xlab = "Specialist.Treatment", ylab = "Age ", col = "light pink")
+```
+### Compare different ages in different year of study
+
+```{r}
+#create box plot for different ages in different year of study
+
+box1 <- boxplot( StudentMH_drop$Age ~ StudentMH_drop$Current.study.year, main="Compare different ages in different year of study", xlab = "Current.study.year", ylab = "Age ", col = "light yellow")
+```
+### Proporation for each course based on Genders
+
+```{r}
+#ggplot for Gender based on courses
+ggplot(data = StudentMH_drop) + geom_bar(mapping = aes(x=Gender, fill=Course), position="dodge") + labs(title="Different courses/Gender", x ="Course", y = "Gender")
+```
+### Relation between Depression and Anxiety
+
+```{r}
+#creat jitter chart for Depression and Anxiety
+# Use single color
+ggplot(StudentMH_drop, aes(x=Depression, y=Anxiety)) + 
+    geom_jitter(position=position_jitter(0.2), color="red") + geom_boxplot(alpha = 0)
+# Change stripchart colors by groups
+p<-ggplot(StudentMH_drop, aes(x=Depression, y=Anxiety, color=dose)) +
+  geom_jitter(position=position_jitter(0.2))
+
+```
+### Proportion of those habe panik attack attend to Specialist.Treatment 
+
+```{r}
+# Change stripchart colors by groups
+plot1 <- ggplot(StudentMH_drop, aes(x=Panic.attack, y=Specialist.Treatment, color="Panic.attack")) +
+  geom_jitter(position=position_jitter(0.2)) + geom_boxplot(alpha = 0)
+# Change the position : interval between stripchart of the same group
+p<-ggplot(StudentMH_drop, aes(x=Panic.attack, y=Specialist.Treatment, color=supp, shape=supp)) +
+  geom_jitter(position=position_dodge(0.10))
+
+
+# Change stripchart colors by groups
+plot2 <- ggplot(StudentMH_drop, aes(x=Anxiety, y=Specialist.Treatment, color="Anxiety")) +
+  geom_jitter(position=position_jitter(0.2)) + geom_boxplot(alpha = 0)
+# Change the position : interval between stripchart of the same group
+p<-ggplot(StudentMH_drop, aes(x=Anxiety, y=Specialist.Treatment, color=supp, shape=supp)) +
+  geom_jitter(position=position_dodge(0.10))
+
+
+plot_grid(plot1, plot2, labels = "AUTO")   #combine two charts together
+```
+
+### Different ages gender attend to Specialist.Treatment
+
+```{r}
+#install.packages("scatterPlotMatrix")
+#library(scatterPlotMatrix)
+
+#create ggplot for age and contact-info
+ggplot(data = StudentMH_drop) + geom_bar(mapping = aes(x=Specialist.Treatment, fill= Gender), position="dodge") + labs(title="Different ages attend to Specialist.Treatment", x ="Specialist.Treatment", y = "Gender")
+
+```
+### Impact of anxiety on different ages
+
+```{r}
+#install.packages("cowplot")
+library(cowplot)
+
+StudentMH_drop1 <- ggplot(StudentMH_drop, aes(x = Age, y = Anxiety)) +
+  geom_boxplot() + theme_bw()    #boxplot for anxiety on different ages
+
+StudentMH_drop2 <- ggplot(StudentMH_drop, aes(x = Anxiety, fill = Age)) +
+  geom_density(alpha = 0.7) + theme_bw() +   #create density
+  theme(legend.position = c(0.8, 0.8))   
+
+plot_grid(StudentMH_drop1, StudentMH_drop2, labels = "AUTO")   #combine two charts together
+```
+#### Compare Ages and gender based on their current study year
+
+```{r}
+#install.packages("patchwork")
+library(ggplot2)
+library(patchwork)
+
+p1 <- ggplot(StudentMH_drop) + geom_point(aes(Gender, Current.study.year)) #create chart for year and gender
+p2 <- ggplot(StudentMH_drop) + geom_boxplot(aes(Age, Current.study.year, group = Current.study.year)) #create chart for year and ages
+
+plot_grid(p1, p2, labels = "AUTO")   #combine two charts together
+
+```
+### check if those with depression, anxiety attend to Specialist.Treatment or not
+
+```{r}
+q1 <- ggplot(StudentMH_drop) + geom_point(aes(Depression, Specialist.Treatment))
+q2 <- ggplot(StudentMH_drop) + geom_boxplot(aes(Anxiety, Specialist.Treatment, group = Specialist.Treatment))
+#q3 <- ggplot(StudentMH_drop) + geom_smooth(aes(Panic.attack, Specialist.Treatment, group = Panic.attack))
+q4 <- ggplot(StudentMH_drop) + geom_bar(aes(Specialist.Treatment))
+
+#install.packages("multipanelfigure")
+library(magrittr)
+library(multipanelfigure)
+figure1 <- multi_panel_figure(columns = 2, rows = 2, panel_label_type = "none")
+
+figure1 %<>%
+  fill_panel(q1, column = 1, row = 1) %<>%
+  fill_panel(q2, column = 2, row = 1) %<>%
+  #fill_panel(q3, column = 1, row = 2) %<>%
+  fill_panel(q4, column = 1, row = 2)
+figure1
+```
+### References
+Aphalo, Pedro J. 2017. Ggpmisc: Miscellaneous Extensions to ’Ggplot2’. https://CRAN.R-project.org/package=ggpmisc.
+
+Attali, Dean. 2017. GgExtra: Add Marginal Histograms to ’Ggplot2’, and More ’Ggplot2’ Enhancements. https://github.com/daattali/ggExtra.
+
+Wilke, Claus O. 2017. Ggridges: Ridgeline Plots in ’Ggplot2’. https://CRAN.R- project.org/package=ggridges.
+
+Wickham, Hadley, and Winston Chang. 2017. Ggplot2: Create Elegant Data Visualisations Using the Grammar of Graphics.
+
+Schloerke, Barret, Jason Crowley, Di Cook, Francois Briatte, Moritz Marbach, Edwin Thoen, Amos Elberg, and Joseph Larmarange. 2016. GGally: Extension to ’Ggplot2’. https://CRAN.R-project.org/package=GGally.
+
+
+
+### Appendix
+```{r code=readLines(knitr::purl('~/Documents/ALY 6010/Week 2/Module 2- R practice.Rmd', documentation = 0)), eval = FALSE}
+```
+
+
+
+
+
+
